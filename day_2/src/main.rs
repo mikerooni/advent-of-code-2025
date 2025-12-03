@@ -2,7 +2,6 @@ use itertools::Itertools;
 use shared::{print_program_header, read_data};
 use std::cmp::{max, min};
 use std::collections::HashMap;
-use std::io::stdin;
 use std::num::ParseIntError;
 
 const DAY: u8 = 2;
@@ -16,9 +15,9 @@ enum GiftShopError<'a> {
 }
 
 fn main() {
-    let mut data = String::new();
-    stdin().read_line(&mut data).unwrap();
-    
+    print_program_header(DAY, "Secret Entrance");
+
+    let data = read_data(DAY);
     let ranges = match parse_all_ranges(&data) {
         Ok(v) => v,
         Err(errors) => {
