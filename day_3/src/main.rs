@@ -60,12 +60,9 @@ fn find_largest_possible_combination(battery_bank: Vec<u8>, count: usize) -> Vec
         let selectable_range = &battery_bank[current_start_offset..max_selectable_index];
         let max_selectable_value = selectable_range.iter().max().unwrap();
 
-        let first_index = &battery_bank[0..max_selectable_index]
-            .iter()
-            .position(|x| x == max_selectable_value)
-            .unwrap();
+        let first_index = &selectable_range.iter().position(|x| x == max_selectable_value).unwrap() + current_start_offset;
 
-        current_start_offset = *first_index + 1;
+        current_start_offset = first_index + 1;
         combination.push(*max_selectable_value);
     }
 
@@ -147,11 +144,24 @@ mod tests {
         );
     }
 
+
+
     #[test]
     fn test_example_data() {
         let example_data = "987654321111111\n811111111111119\n234234234234278\n818181911112111";
         let battery_banks = parse_battery_banks(example_data).unwrap();
 
         assert_eq!(find_total_largest_voltage(battery_banks, 2), 357);
+    }
+
+    #[test]
+    fn test_example_overload() {
+        let example_data = "987654321111111\n811111111111119\n234234234234278\n818181911112111";
+        let battery_banks = parse_battery_banks(example_data).unwrap();
+
+        assert_eq!(
+            battery_banks.into_iter().map(|bank| find_largest_possible_voltage(bank, 12)).collect_vec(),
+            vec![987654321111, 811111111119, 434234234278, 888911112111]
+        );
     }
 }
