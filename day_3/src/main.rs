@@ -25,22 +25,23 @@ fn main() {
     };
 
     println!("Max possible voltage: {}", find_total_largest_voltage(battery_banks.clone(), 2));
+    println!("Max possible voltage (overloaded to 12 batteries): {}", find_total_largest_voltage(battery_banks.clone(), 12));
 }
 
-fn find_total_largest_voltage(battery_banks: Vec<Vec<u8>>, count: usize) -> u32 {
+fn find_total_largest_voltage(battery_banks: Vec<Vec<u8>>, count: usize) -> u128 {
     battery_banks
         .into_iter()
         .map(|bank| find_largest_possible_voltage(bank, count))
         .sum()
 }
 
-fn find_largest_possible_voltage(battery_bank: Vec<u8>, count: usize) -> u32 {
+fn find_largest_possible_voltage(battery_bank: Vec<u8>, count: usize) -> u128 {
     let batteries = find_largest_possible_combination(battery_bank, count);
 
     let voltage = batteries
         .iter()
         .fold((0, count as i32 - 1), |(accum, exponent), battery| {
-            let value = *battery as u32 * 10u32.pow(exponent as u32);
+            let value = *battery as u128 * 10u128.pow(exponent as u32);
 
             (accum + value, exponent - 1)
         });
