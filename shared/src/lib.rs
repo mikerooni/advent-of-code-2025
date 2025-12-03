@@ -20,6 +20,7 @@ pub fn read_data_stdin() -> String {
     println!("Write \"####END####\" to end the input.");
 
     let mut input = String::new();
+    let mut full_input = String::new();
 
     loop {
         stdin().read_line( & mut input ).unwrap();
@@ -28,7 +29,9 @@ pub fn read_data_stdin() -> String {
         if input_line == "####END####" {
             break;
         }
+
+        full_input = input.clone();
     }
 
-    input
+    full_input
 }
