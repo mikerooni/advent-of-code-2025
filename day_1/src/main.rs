@@ -2,7 +2,7 @@
 
 use crate::CombinationLockError::InvalidInstruction;
 use itertools::Itertools;
-use shared::{print_program_header, read_data};
+use shared::{print_program_header, read_data, read_data_stdin};
 
 type CombinationLockResult<'a, T> = Result<T, CombinationLockError<'a>>;
 
@@ -21,11 +21,12 @@ fn main() {
         .filter(|line| !line.is_empty())
         .collect_vec();
     
-    let password = count_zero_states(50, combination);
+    let result = count_zero_states(50, combination);
     
-    match password {
-        Ok(password) => {
-            println!("The password is {password}")
+    match result {
+        Ok((password, step2_password)) => {
+            println!("The password is {password}");
+            println!("The password for step 2 is {step2_password}");
         }
         Err(errors) => {
             eprintln!("Cannot read instructions:");
@@ -37,8 +38,9 @@ fn main() {
 fn count_zero_states(
     initial_state: usize,
     combination: Vec<&str>,
-) -> Result<usize, Vec<CombinationLockError<'_>>> {
+) -> Result<(usize, usize), Vec<CombinationLockError<'_>>> {
     let mut current_state = initial_state as isize;
+    let mut passed_zeroes = 0;
     let mut zeroes = 0;
 
     let (rotation_values, errors): (Vec<_>, Vec<_>) = combination
@@ -51,14 +53,17 @@ fn count_zero_states(
     }
 
     for rotation_value in rotation_values {
-        current_state = next_state(current_state, rotation_value);
+        let (next_state, ignored_clicks) = next_state(current_state, rotation_value);
+        current_state = next_state;
+        passed_zeroes += ignored_clicks as usize;
 
         if current_state == 0 {
             zeroes += 1;
+            passed_zeroes += 1;
         }
     }
 
-    Ok(zeroes)
+    Ok((zeroes, passed_zeroes))
 }
 
 fn parse_rotation_value(instruction: &str) -> CombinationLockResult<'_, isize> {
@@ -80,19 +85,26 @@ fn parse_rotation_value(instruction: &str) -> CombinationLockResult<'_, isize> {
     Ok((distance as isize) * direction_multiplier)
 }
 
-fn next_state(current_state: isize, rotation_value: isize) -> isize {
+fn next_state(current_state: isize, rotation_value: isize) -> (isize, isize) {
+    let mut ignored_clicks = (rotation_value as f64 / 100.0).abs().floor() as isize;
     let wrapped_rotation_value = rotation_value % 100;
     let next_state = current_state + wrapped_rotation_value;
 
     let next_state_wrapped = if next_state > 99 {
+        if next_state - 100 != 0 {
+            ignored_clicks += 1;
+        }
         next_state - 100
     } else if next_state < 0 {
+        if current_state != 0 {
+            ignored_clicks += 1;
+        }
         next_state + 100
     } else {
         next_state
     };
 
-    next_state_wrapped
+    (next_state_wrapped, ignored_clicks)
 }
 
 #[cfg(test)]
@@ -133,12 +145,13 @@ mod tests {
     }
 
     fold_state_tests! {
-        test_next_state_in_range:               initial=42, dist=10  => up=52, down=32,
-        test_next_state_distance_exactly_100:   initial=42, dist=100 => up=42, down=42,
-        test_next_state_distance_over_100:      initial=42, dist=102 => up=44, down=40,
+        test_next_state_in_range:               initial=42, dist=10  => up=(52, 0), down=(32, 0),
+        test_next_state_distance_exactly_100:   initial=42, dist=100 => up=(42, 1), down=(42, 1),
+        test_next_state_distance_over_100:      initial=42, dist=102 => up=(44, 1), down=(40, 1),
+        test_next_state_distance_over_300:      initial=42, dist=302 => up=(44, 3), down=(40, 3),
 
-        test_next_state_wrapped:                initial=42, dist=60  => up=2,  down=82,
-        test_next_state_to_zero:                initial=50, dist=50  => up=0,  down=0,
+        test_next_state_wrapped:                initial=42, dist=60  => up=(2, 1),  down=(82, 1),
+        test_next_state_to_zero:                initial=50, dist=50  => up=(0, 0),  down=(0, 0),
     }
 
     #[test]
@@ -150,7 +163,7 @@ mod tests {
                     "L68", "L30", "R48", "L5", "R60", "L55", "L1", "L99", "R14", "L82"
                 ]
             ),
-            Ok(3)
+            Ok((3, 6))
         );
     }
 }
