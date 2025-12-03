@@ -1,0 +1,10 @@
+[package]
+name = "day_2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+shared = {path = "../shared"}
+
+itertools = "0.14.0"
+log = "0.4.29"
