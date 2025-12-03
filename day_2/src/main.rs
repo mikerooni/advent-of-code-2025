@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use shared::{print_program_header, read_data};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::io::stdin;
@@ -17,7 +18,7 @@ enum GiftShopError<'a> {
 fn main() {
     let mut data = String::new();
     stdin().read_line(&mut data).unwrap();
-
+    
     let ranges = match parse_all_ranges(&data) {
         Ok(v) => v,
         Err(errors) => {
@@ -27,31 +28,37 @@ fn main() {
         }
     };
 
-    println!("The sum of all invalid IDs for 2 repetitions is {}", sum_all_invalid_ids(ranges.clone(), 2));
+    println!(
+        "The sum of all invalid IDs for 2 repetitions is {}",
+        sum_all_invalid_ids(ranges.clone(), vec![2])
+    );
 
     let max_repetitions = find_max_possible_repetitions(&ranges);
-    let all_repetitions_sum: u128 = (2..=max_repetitions)
-        .map(|repetitions| sum_all_invalid_ids(ranges.clone(), repetitions))
-        .sum();
+    let all_repetitions_sum: u128 =
+        sum_all_invalid_ids(ranges.clone(), (2..=max_repetitions).collect_vec());
 
-    println!("The sum of all invalid IDs for all possible repetitions is {all_repetitions_sum}", );
+    println!("The sum of all invalid IDs for all possible repetitions is {all_repetitions_sum}",);
 }
 
 fn find_max_possible_repetitions(ranges: &Vec<(u64, u64)>) -> u64 {
     let max_value = ranges.iter().map(|&(a, b)| b).max().unwrap_or(0);
-    let max_len = max_value.ilog10() as f64 + 1.0;
-    let max_repetitions = (max_len / 2.0).floor() as u64;
+    let max_len = max_value.ilog10() as u64 + 1;
 
-    max(max_repetitions, 2)
+    max(max_len, 2)
 }
 
-fn sum_all_invalid_ids(ranges: Vec<(u64, u64)>, repeats: u64) -> u128 {
+fn sum_all_invalid_ids(ranges: Vec<(u64, u64)>, repeat_counts: Vec<u64>) -> u128 {
     let invalid_ids = ranges
         .into_iter()
-        .flat_map(|range| find_invalid_ids_in_range(range, repeats))
-        .collect_vec();
+        .flat_map(|range| {
+            repeat_counts
+                .iter()
+                .flat_map(|repeats| find_invalid_ids_in_range(range, *repeats))
+                .collect_vec()
+        })
+        .unique();
 
-    invalid_ids.iter().sum()
+    invalid_ids.sum()
 }
 
 fn find_invalid_ids_in_range(range: (u64, u64), repeats: u64) -> Vec<u128> {
@@ -218,6 +225,6 @@ mod tests {
         let example_data = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565635-565659,824824821-824824827,2121212118-2121212124";
 
         let example_ranges = parse_all_ranges(example_data).unwrap();
-        assert_eq!(sum_all_invalid_ids(example_ranges, 2), 1227775554);
+        assert_eq!(sum_all_invalid_ids(example_ranges, vec![2]), 1227775554);
     }
 }
