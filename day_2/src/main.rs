@@ -27,10 +27,22 @@ fn main() {
         }
     };
 
-    println!(
-        "The sum of all invalid IDs is {}",
-        sum_all_invalid_ids(ranges, 2)
-    );
+    println!("The sum of all invalid IDs for 2 repetitions is {}", sum_all_invalid_ids(ranges.clone(), 2));
+
+    let max_repetitions = find_max_possible_repetitions(&ranges);
+    let all_repetitions_sum: u128 = (2..=max_repetitions)
+        .map(|repetitions| sum_all_invalid_ids(ranges.clone(), repetitions))
+        .sum();
+
+    println!("The sum of all invalid IDs for all possible repetitions is {all_repetitions_sum}", );
+}
+
+fn find_max_possible_repetitions(ranges: &Vec<(u64, u64)>) -> u64 {
+    let max_value = ranges.iter().map(|&(a, b)| b).max().unwrap_or(0);
+    let max_len = max_value.ilog10() as f64 + 1.0;
+    let max_repetitions = (max_len / 2.0).floor() as u64;
+
+    max(max_repetitions, 2)
 }
 
 fn sum_all_invalid_ids(ranges: Vec<(u64, u64)>, repeats: u64) -> u128 {
@@ -186,6 +198,11 @@ mod tests {
             find_potential_partials((133332, 369295901), 4),
             (10..=99).collect_vec()
         );
+    }
+
+    #[test]
+    fn test_find_potential_parts_with_repeats_above_length() {
+        assert_eq!(find_potential_partials((11, 22), 4), vec![]);
     }
 
     #[test]
