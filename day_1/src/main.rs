@@ -40,7 +40,7 @@ fn count_zero_states(
     combination: Vec<&str>,
 ) -> Result<(usize, usize), Vec<CombinationLockError<'_>>> {
     let mut current_state = initial_state as isize;
-    let mut passed_zeroes = 0;
+    let mut zeroes_including_passed = 0;
     let mut zeroes = 0;
 
     let (rotation_values, errors): (Vec<_>, Vec<_>) = combination
@@ -53,17 +53,17 @@ fn count_zero_states(
     }
 
     for rotation_value in rotation_values {
-        let (next_state, ignored_clicks) = next_state(current_state, rotation_value);
+        let (next_state, passed_zeroes) = next_state(current_state, rotation_value);
         current_state = next_state;
-        passed_zeroes += ignored_clicks as usize;
+        zeroes_including_passed += passed_zeroes as usize;
 
         if current_state == 0 {
             zeroes += 1;
-            passed_zeroes += 1;
+            zeroes_including_passed += 1;
         }
     }
 
-    Ok((zeroes, passed_zeroes))
+    Ok((zeroes, zeroes_including_passed))
 }
 
 fn parse_rotation_value(instruction: &str) -> CombinationLockResult<'_, isize> {
@@ -86,25 +86,25 @@ fn parse_rotation_value(instruction: &str) -> CombinationLockResult<'_, isize> {
 }
 
 fn next_state(current_state: isize, rotation_value: isize) -> (isize, isize) {
-    let mut ignored_clicks = (rotation_value as f64 / 100.0).abs().floor() as isize;
+    let mut passed_zeroes = (rotation_value as f64 / 100.0).abs().floor() as isize;
     let wrapped_rotation_value = rotation_value % 100;
     let next_state = current_state + wrapped_rotation_value;
 
     let next_state_wrapped = if next_state > 99 {
         if next_state - 100 != 0 {
-            ignored_clicks += 1;
+            passed_zeroes += 1;
         }
         next_state - 100
     } else if next_state < 0 {
         if current_state != 0 {
-            ignored_clicks += 1;
+            passed_zeroes += 1;
         }
         next_state + 100
     } else {
         next_state
     };
 
-    (next_state_wrapped, ignored_clicks)
+    (next_state_wrapped, passed_zeroes)
 }
 
 #[cfg(test)]
