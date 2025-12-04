@@ -1,6 +1,6 @@
-use std::io::{stdin, Read};
 use crate::PrintingDepartmentError::{EmptyInput, IllegalInput, MismatchedRowSize};
 use itertools::Itertools;
+use std::io::{Read, stdin};
 
 const DAY: u8 = 4;
 
@@ -29,16 +29,31 @@ fn main() {
         }
     };
 
-    println!("Accessible rolls: {}", count_accessible_rolls(rack, 3))
+    let mut padded_rack = pad_rack(rack);
+    println!("Accessible rolls (first step): {}", count_accessible_rolls(&mut padded_rack, 3, false));
+
+    let mut total_accessible = 0;
+    loop {
+        let extracted_rolls = count_accessible_rolls(&mut padded_rack, 3, true);
+        total_accessible += extracted_rolls;
+
+        if extracted_rolls == 0 {
+            break;
+        }
+    }
+
+    println!("Accessible rolls (repeated): {total_accessible}")
 }
 
-fn count_accessible_rolls(rack: PaperRollRack, max_occupied_adjacent: usize) -> usize {
+fn count_accessible_rolls(
+    padded_rack: &mut PaperRollRack,
+    max_occupied_adjacent: usize,
+    extract: bool,
+) -> usize {
     let mut accessible_rolls = 0;
 
-    let width = rack[0].len();
-    let height = rack.len();
-
-    let padded_rack = pad_rack(rack);
+    let width = padded_rack[0].len() - 2;
+    let height = padded_rack.len() - 2;
 
     for row in 1..=height {
         for column in 1..=width {
@@ -48,6 +63,10 @@ fn count_accessible_rolls(rack: PaperRollRack, max_occupied_adjacent: usize) -> 
 
             let occupied_neighbor_count = find_occupied_neighbor_count(&padded_rack, row, column);
             if occupied_neighbor_count <= max_occupied_adjacent {
+                if extract {
+                    padded_rack[row][column] = false;
+                }
+
                 accessible_rolls += 1;
             }
         }
@@ -178,11 +197,28 @@ mod tests {
     #[test]
     fn test_example_data() {
         let example_data = "..@@.@@@@.\n@@@.@.@.@@\n@@@@@.@.@@\n@.@@@@..@.\n@@.@@@@.@@\n.@@@@@@@.@\n.@.@.@.@@@\n@.@@@.@@@@\n.@@@@@@@@.\n@.@.@@@.@.";
+        let mut padded_rack = pad_rack(parse_paper_rolls(&example_data).unwrap());
+
+        assert_eq!(count_accessible_rolls(&mut padded_rack, 3, false), 13);
+    }
+
+    #[test]
+    fn test_example_data_part_2() {
+        let example_data = "..@@.@@@@.\n@@@.@.@.@@\n@@@@@.@.@@\n@.@@@@..@.\n@@.@@@@.@@\n.@@@@@@@.@\n.@.@.@.@@@\n@.@@@.@@@@\n.@@@@@@@@.\n@.@.@@@.@.";
         let rack = parse_paper_rolls(&example_data).unwrap();
 
-        assert_eq!(
-            count_accessible_rolls(rack, 3),
-            13
-        );
+        let mut padded_rack = pad_rack(rack);
+        let mut total_accessible = 0;
+
+        loop {
+            let extracted_rolls = count_accessible_rolls(&mut padded_rack, 3, true);
+            total_accessible += extracted_rolls;
+
+            if extracted_rolls == 0 {
+                break;
+            }
+        }
+
+        assert_eq!(total_accessible, 43);
     }
 }
