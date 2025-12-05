@@ -1,5 +1,6 @@
+use std::cmp::max;
 use std::io::{stdin, Read};
-use itertools::Itertools;
+use itertools::{sorted, Itertools};
 
 const DAY: u8 = 5;
 
@@ -15,12 +16,12 @@ fn main() {
     stdin().read_to_string(&mut data).unwrap();
 
     let parsed = parse_input(&data);
-    
+
     let available_fresh_ingredients = find_available_fresh_ingredients(&parsed);
     println!("Available fresh ingredients: {}", available_fresh_ingredients.len());
-    
-    let all_fresh_ingredients = find_all_fresh_ingredients(&parsed);
-    println!("All fresh ingredients: {}", all_fresh_ingredients.len());
+
+    let all_fresh_ingredients = count_all_fresh_ingredients(parsed);
+    println!("All fresh ingredients: {}", all_fresh_ingredients);
 }
 
 fn find_available_fresh_ingredients(data: &CafeteriaData) -> Vec<u64> {
@@ -32,11 +33,26 @@ fn find_available_fresh_ingredients(data: &CafeteriaData) -> Vec<u64> {
         .collect_vec()
 }
 
-fn find_all_fresh_ingredients(data: &CafeteriaData) -> Vec<u64> {
-    data.fresh_ranges.iter()
-        .flat_map(|(start, end)| (*start..=*end).collect_vec())
-        .unique()
-        .collect_vec()
+fn count_all_fresh_ingredients(data: CafeteriaData) -> u128 {
+    let sorted_ranges = data.fresh_ranges.into_iter()
+        .sorted_by_key(|(start, _)| *start)
+        .collect_vec();
+
+    let mut count = 0u128;
+    let mut next_min = 0;
+
+    for (start, end) in sorted_ranges {
+        if next_min >= start && start >= end {
+            continue
+        }
+
+        let start = max(start, next_min);
+
+        count += (end - start + 1) as u128;
+        next_min = end + 1;
+    }
+
+    count
 }
 
 // Technically not the full format spec, but (assuming correct input data) it's close enough and I want to
@@ -97,8 +113,8 @@ mod tests {
     fn test_find_all_fresh_ingredients() {
         let parsed = parse_input(EXAMPLE_INPUT);
         assert_eq!(
-            find_all_fresh_ingredients(&parsed).into_iter().sorted().collect_vec(),
-            vec![3,4,5,10,11,12,13,14,15,16,17,18,19,20]
+            count_all_fresh_ingredients(parsed),
+            14
         )
     }
 }
