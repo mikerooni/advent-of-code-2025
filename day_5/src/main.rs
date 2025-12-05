@@ -15,9 +15,12 @@ fn main() {
     stdin().read_to_string(&mut data).unwrap();
 
     let parsed = parse_input(&data);
+    
     let available_fresh_ingredients = find_available_fresh_ingredients(&parsed);
-
-    println!("Available fresh ingredients: {}", available_fresh_ingredients.len())
+    println!("Available fresh ingredients: {}", available_fresh_ingredients.len());
+    
+    let all_fresh_ingredients = find_all_fresh_ingredients(&parsed);
+    println!("All fresh ingredients: {}", all_fresh_ingredients.len());
 }
 
 fn find_available_fresh_ingredients(data: &CafeteriaData) -> Vec<u64> {
@@ -26,6 +29,13 @@ fn find_available_fresh_ingredients(data: &CafeteriaData) -> Vec<u64> {
             data.fresh_ranges.iter().any(|(start, end)| start <= ingredient && *ingredient <= end)
         })
         .map(|ingredient| *ingredient)
+        .collect_vec()
+}
+
+fn find_all_fresh_ingredients(data: &CafeteriaData) -> Vec<u64> {
+    data.fresh_ranges.iter()
+        .flat_map(|(start, end)| (*start..=*end).collect_vec())
+        .unique()
         .collect_vec()
 }
 
@@ -80,6 +90,15 @@ mod tests {
         assert_eq!(
             find_available_fresh_ingredients(&parsed),
             vec![5, 11, 17]
+        )
+    }
+
+    #[test]
+    fn test_find_all_fresh_ingredients() {
+        let parsed = parse_input(EXAMPLE_INPUT);
+        assert_eq!(
+            find_all_fresh_ingredients(&parsed).into_iter().sorted().collect_vec(),
+            vec![3,4,5,10,11,12,13,14,15,16,17,18,19,20]
         )
     }
 }
